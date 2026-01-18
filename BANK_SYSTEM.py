@@ -1,8 +1,14 @@
 # functionable bank system
+# functionable bank system with file handling
 import string
 import time as t
+from datetime import datetime
+
 accounts = {}
 balances = {}
+transactions = {}
+
+
 def create_account():
     special = string.punctuation
     digits = string.digits
@@ -10,7 +16,9 @@ def create_account():
         try:
             initial = int(input("Enter your initial deposit: "))
             if initial < 1000:
-                print("You are not allowed to create an account, initial deposit must be 1000 and above..")
+                print(
+                    "You are not allowed to create an account, initial deposit must be 1000 and above.."
+                )
             else:
                 break
         except ValueError:
@@ -19,22 +27,32 @@ def create_account():
     while True:
         user = input("Enter your user: ")
         if len(user) < 8:
-            print("User must be 8 characters long")           
+            print("User must be 8 characters long")
         else:
             print(f"User '{user}' has been created")
             break
 
     while True:
         _password = input("Enter your password ")
-        if any(ch in special for ch in _password) and any(dg in digits for dg in _password) and len(_password) >= 8:
+        if (
+            any(ch in special for ch in _password)
+            and any(dg in digits for dg in _password)
+            and len(_password) >= 8
+        ):
             accounts[user] = _password
             balances[user] = initial
+            transactions[user] = []
+            transactions[user].append(
+                f"Account created with initial deposit ₱{initial:,} on {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"
+            )
             print(f"Password '{_password}' has been set successfuly")
             t.sleep(1)
             print("Account created...")
             break
         else:
             print("Must be atleast 8 chracters long and contain any special characters")
+
+
 def login():
     print("\nLogin:")
     while True:
@@ -45,22 +63,33 @@ def login():
             while True:
                 password = input("Enter your password: ")
                 if accounts[user] == password:
-                    return user                   
+                    return user
                 else:
                     print("Invalid password")
         again = input("Press enter to try again or any key to exit> ")
         if again != "":
             return None
-        
-def bank(username):
+
+
+def bank(username, table):
+    with open(table, "w") as file:
+        file.write(f"Transaction history for {username}:\n")
     while True:
         t.sleep(1)
         print(f"\nWelcome to BDS bank '{username}'")
         print("=" * 40)
-        print("1. Withdraw | 2. Deposit | 3. View Balance | 4. Logout")
+        print(
+            "1. Withdraw | 2. Deposit | 3. View Balance | 4. View Transactions | 5. Logout")
         try:
             opt = input("Enter option: ")
             if opt == "4":
+                print("Transactions History:")
+                if username not in transactions or len(transactions[username]) == 0:
+                    print("No transactions yet!!")
+                else:
+                    for i, n in enumerate(transactions[username], 1):
+                        print(f"{i}. {n}")
+            elif opt == "5":
                 print("Logging out.....")
                 t.sleep(1.5)
                 print(f"User '{username}' successfuly logged out")
@@ -70,42 +99,53 @@ def bank(username):
             elif opt == "2":
                 dep = int(input("Enter amount to deposit: "))
                 if dep <= 0:
-                    print("zero cannot be deposit!")         
+                    print("zero cannot be deposit!")
                 else:
                     print(f"Your balance: {balances[username]}")
                     balances[username] += dep
                     print(f"Updated balance: {balances[username]}")
+                    line = f"Deposited '{dep}' on {datetime.now().strftime("%Y-%m-%d %H:%M:%S")}"
+                    transactions[username].append(line)
+                    with open(table, "a") as file:
+                        file.write(line + "\n")
             elif opt == "1":
                 _withdraw = int(input("Enter amount of money to withdraw: "))
-                if _withdraw < 0 or _withdraw < 100:
-                    print("Must be 100 and above of money to withdraw")
+                if _withdraw > balances[username]:
+                    print("Insufficient money!!!")
                 else:
                     balances[username] -= _withdraw
-                    for i in balances.values():                    
-                        print(f"Successfuly withdrawed: '{_withdraw}'")
-                        print(f"Updated balance: {i}")
+                    print(f"Successfuly withdrawed: '{_withdraw}'")
+                    print(f"Updated balance: {balances[username]}")
+                    line2 = f"Withdrawn '{_withdraw}' on {datetime.now().strftime("%Y-%m-%d %H:%M:%S")}"
+                    transactions[username].append(line2)
+                    with open(table, "a") as file:
+                        file.write(line2 + "\n")
             else:
                 print("Enter option above...")
         except ValueError:
             print("Please enter a valid input")
+
+
 def main():
-        while True:
-            print("\nBDS bank: CEO John carl pogi")
-            print("=" * 30)
-            print("\n1. Create account | 2. Login | 3. Exit")
-            opt1 = input("Enter option: ")
-            match opt1:
-                case "1":
-                    create_account()
-                case "2":
-                    user = login()
-                    if user:
-                        bank(user)
-                case "3":
-                    print("Goodbye")
-                    break
-                    
-if __name__ = "__main__":
+    while True:
+        print("\nBDS bank: CEO John carl pogi")
+        print("=" * 30)
+        print("\n1. Create account | 2. Login | 3. Exit")
+        opt1 = input("Enter option: ")
+        match opt1:
+            case "1":
+                create_account()
+            case "2":
+                user1 = login()
+                if user1:
+                    table = "history.txt"
+                    bank(user1, table)
+            case "3":
+                print("Goodbye")
+                break
+
+
+if __name__ == "__main__":
     main()
 
 
